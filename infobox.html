@@ -188,12 +188,22 @@
         }
 
         window.addEventListener("message", (event) => {
-            const state = findState(event.data);
+    statusElement.style.display = "block";
 
-            if (state) {
-                renderInfobox(state);
-            }
-        });
+    try {
+        statusElement.textContent =
+            "MESSAGE: " + JSON.stringify(event.data);
+    } catch {
+        statusElement.textContent =
+            "MESSAGE: " + String(event.data);
+    }
+
+    const state = findState(event.data);
+
+    if (state) {
+        renderInfobox(state);
+    }
+});
 
         imageElement.addEventListener("load", sendResize);
 
