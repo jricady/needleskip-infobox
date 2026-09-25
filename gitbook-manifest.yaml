@@ -1,0 +1,12 @@
+name: needleskip-infobox
+title: needleskip-infobox
+script: src\index.tsx
+description: ''
+scopes: []
+blocks:
+  - id: needleskip-infobox
+    title: needleskip-infobox
+    description: My GitBook Integration
+organization: needleskip
+visibility: private
+secrets: {}

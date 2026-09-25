@@ -1,0 +1,21 @@
+{
+    "name": "needleskip-infobox",
+    "private": true,
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "publish": "gitbook publish ."
+    },
+    "dependencies": {
+        "@gitbook/runtime": "*"
+    },
+    "devDependencies": {
+        "@gitbook/cli": "^0.32.6",
+        "@gitbook/tsconfig": "*",
+        "@cloudflare/workers-types": "*"
+    },
+    "allowScripts": {
+        "@gitbook/cli@0.32.6": true,
+        "esbuild@0.17.19": true,
+        "workerd@1.20260730.1": true
+    }
+}

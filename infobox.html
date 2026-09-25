@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        #infobox {
+            width: 100%;
+        }
+
+        #status {
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        #image {
+            display: none;
+            width: 100%;
+            height: auto;
+            max-height: 380px;
+            object-fit: contain;
+        }
+
+        #rows {
+            width: 100%;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+            width: 100%;
+            border-top: 1px solid rgba(127, 127, 127, 0.25);
+        }
+
+        .cell {
+            min-width: 0;
+            padding: 8px 10px;
+            overflow-wrap: anywhere;
+        }
+
+        .label {
+            font-weight: 600;
+            border-right: 1px solid rgba(127, 127, 127, 0.25);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="infobox">
+        <div id="status">FRAME LOADED</div>
+        <img id="image" alt="" />
+        <div id="rows"></div>
+    </div>
+
+    <script>
+        const statusElement = document.getElementById("status");
+        const imageElement = document.getElementById("image");
+        const rowsElement = document.getElementById("rows");
+
+        function hasInfoboxData(value) {
+            if (!value || typeof value !== "object") {
+                return false;
+            }
+
+            if ("name" in value || "imageUrl" in value) {
+                return true;
+            }
+
+            for (let i = 1; i <= 10; i++) {
+                if (
+                    `row${i}Label` in value ||
+                    `row${i}Value` in value
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function findState(message) {
+            if (!message || typeof message !== "object") {
+                return null;
+            }
+
+            if (hasInfoboxData(message.state)) {
+                return message.state;
+            }
+
+            if (hasInfoboxData(message.data)) {
+                return message.data;
+            }
+
+            if (hasInfoboxData(message)) {
+                return message;
+            }
+
+            return null;
+        }
+
+        function renderInfobox(state) {
+            statusElement.style.display = "none";
+
+            const imageUrl =
+                typeof state.imageUrl === "string"
+                    ? state.imageUrl.trim()
+                    : "";
+
+            if (imageUrl) {
+                imageElement.src = imageUrl;
+                imageElement.style.display = "block";
+            } else {
+                imageElement.removeAttribute("src");
+                imageElement.style.display = "none";
+            }
+
+            rowsElement.replaceChildren();
+
+            for (let i = 1; i <= 10; i++) {
+                const label =
+                    typeof state[`row${i}Label`] === "string"
+                        ? state[`row${i}Label`].trim()
+                        : "";
+
+                const value =
+                    typeof state[`row${i}Value`] === "string"
+                        ? state[`row${i}Value`].trim()
+                        : "";
+
+                if (!label && !value) {
+                    continue;
+                }
+
+                const row = document.createElement("div");
+                row.className = "row";
+
+                const labelCell = document.createElement("div");
+                labelCell.className = "cell label";
+                labelCell.textContent = label;
+
+                const valueCell = document.createElement("div");
+                valueCell.className = "cell value";
+                valueCell.textContent = value;
+
+                row.append(labelCell, valueCell);
+                rowsElement.append(row);
+            }
+
+            sendResize();
+        }
+
+        function sendResize() {
+            requestAnimationFrame(() => {
+                const width = Math.max(
+                    document.documentElement.scrollWidth,
+                    1
+                );
+
+                const height = Math.max(
+                    document.documentElement.scrollHeight,
+                    1
+                );
+
+                window.parent.postMessage(
+                    {
+                        action: "@webframe.resize",
+                        aspectRatio: width / height,
+                        maxHeight: height
+                    },
+                    "*"
+                );
+            });
+        }
+
+        window.addEventListener("message", (event) => {
+            const state = findState(event.data);
+
+            if (state) {
+                renderInfobox(state);
+            }
+        });
+
+        imageElement.addEventListener("load", sendResize);
+
+        if ("ResizeObserver" in window) {
+            new ResizeObserver(sendResize).observe(
+                document.documentElement
+            );
+        }
+
+        window.parent.postMessage(
+            {
+                action: "@webframe.ready"
+            },
+            "*"
+        );
+
+        sendResize();
+    </script>
+</body>
+</html>
