@@ -213,14 +213,42 @@
             );
         }
 
-        window.parent.postMessage(
-            {
-                action: "@webframe.ready"
-            },
-            "*"
-        );
+        function readStateFromQuery() {
+    const params = new URLSearchParams(window.location.search);
 
-        sendResize();
+    const keys = ["name", "imageUrl"];
+
+    for (let i = 1; i <= 10; i++) {
+        keys.push(`row${i}Label`, `row${i}Value`);
+    }
+
+    if (!keys.some((key) => params.has(key))) {
+        return null;
+    }
+
+    const state = {
+        name: params.get("name") ?? "",
+        imageUrl: params.get("imageUrl") ?? ""
+    };
+
+    for (let i = 1; i <= 10; i++) {
+        state[`row${i}Label`] =
+            params.get(`row${i}Label`) ?? "";
+
+        state[`row${i}Value`] =
+            params.get(`row${i}Value`) ?? "";
+    }
+
+    return state;
+}
+
+const queryState = readStateFromQuery();
+
+if (queryState) {
+    renderInfobox(queryState);
+} else {
+    sendResize();
+}
     </script>
 </body>
 </html>
