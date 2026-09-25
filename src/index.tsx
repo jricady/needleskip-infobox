@@ -374,8 +374,44 @@ const infoboxBlock = createComponent<
             element.context.type === "document" &&
             element.context.editable;
 
-        const infoboxUrl =
-    "https://sixth-capital-letting-skirts.trycloudflare.com/infobox.html";
+        const infoboxParams = new URLSearchParams({
+    name: element.props.name ?? "",
+    imageUrl: element.props.imageUrl ?? "",
+
+    row1Label: element.props.row1Label ?? "",
+    row1Value: element.props.row1Value ?? "",
+
+    row2Label: element.props.row2Label ?? "",
+    row2Value: element.props.row2Value ?? "",
+
+    row3Label: element.props.row3Label ?? "",
+    row3Value: element.props.row3Value ?? "",
+
+    row4Label: element.props.row4Label ?? "",
+    row4Value: element.props.row4Value ?? "",
+
+    row5Label: element.props.row5Label ?? "",
+    row5Value: element.props.row5Value ?? "",
+
+    row6Label: element.props.row6Label ?? "",
+    row6Value: element.props.row6Value ?? "",
+
+    row7Label: element.props.row7Label ?? "",
+    row7Value: element.props.row7Value ?? "",
+
+    row8Label: element.props.row8Label ?? "",
+    row8Value: element.props.row8Value ?? "",
+
+    row9Label: element.props.row9Label ?? "",
+    row9Value: element.props.row9Value ?? "",
+
+    row10Label: element.props.row10Label ?? "",
+    row10Value: element.props.row10Value ?? "",
+});
+
+const infoboxUrl =
+    "https://jricady.github.io/needleskip-infobox/infobox.html?" +
+    infoboxParams.toString();
 
 return (
             <block>
@@ -386,10 +422,11 @@ return (
                     }
                 >
                     <webframe
+    aspectRatio={1.45}
     source={{
         url: infoboxUrl,
     }}
-                        data={{
+    data={{
                             name:
                                 element.props.name ??
                                 "",
