@@ -18,8 +18,11 @@
         }
 
         #infobox {
-            width: 100%;
-        }
+    width: 100%;
+    max-width: 520px;
+    min-width: 0;
+    margin: 0 auto;
+}
 
         #status {
             padding: 8px;
@@ -165,27 +168,34 @@
         }
 
         function sendResize() {
-            requestAnimationFrame(() => {
-                const width = Math.max(
-                    document.documentElement.scrollWidth,
-                    1
-                );
+    requestAnimationFrame(() => {
+        const infobox =
+            document.getElementById("infobox");
 
-                const height = Math.max(
-                    document.documentElement.scrollHeight,
-                    1
-                );
+        const rect =
+            infobox.getBoundingClientRect();
 
-                window.parent.postMessage(
-                    {
-                        action: "@webframe.resize",
-                        aspectRatio: width / height,
-                        maxHeight: height
-                    },
-                    "*"
-                );
-            });
-        }
+        const width = Math.max(
+            Math.ceil(rect.width),
+            1
+        );
+
+        const height = Math.max(
+            Math.ceil(rect.height),
+            1
+        );
+
+        window.parent.postMessage(
+            {
+                action: "@webframe.resize",
+                aspectRatio: width / height,
+                maxWidth: 520,
+                maxHeight: height
+            },
+            "*"
+        );
+    });
+}
 
         window.addEventListener("message", (event) => {
     const state = findState(event.data);
@@ -198,10 +208,10 @@
         imageElement.addEventListener("load", sendResize);
 
         if ("ResizeObserver" in window) {
-            new ResizeObserver(sendResize).observe(
-                document.documentElement
-            );
-        }
+    new ResizeObserver(sendResize).observe(
+        document.getElementById("infobox")
+    );
+}
 
         function readStateFromQuery() {
     const params = new URLSearchParams(window.location.search);
