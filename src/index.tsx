@@ -107,16 +107,33 @@ const INFOBOX_HTML = `<!doctype html>
 
         #root {
             width: 100%;
+            max-width: 520px;
+            min-width: 0;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid rgba(127, 127, 127, 0.28);
+            border-radius: 8px;
+            background: transparent;
+        }
+
+        #title {
+            padding: 11px 14px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        #title[hidden] {
+            display: none;
         }
 
         #image {
             display: block;
             width: 100%;
             height: auto;
-            max-height: 380px;
+            max-height: 280px;
             object-fit: contain;
             object-position: center;
-            margin: 0 0 12px 0;
+            padding: 12px 14px;
         }
 
         #image[hidden] {
@@ -145,9 +162,18 @@ const INFOBOX_HTML = `<!doctype html>
 
         .label {
             font-weight: 700;
+            border-right: 1px solid rgba(127, 127, 127, 0.25);
         }
 
         @media (max-width: 420px) {
+            #title {
+                padding: 10px 12px;
+            }
+
+            #image {
+                padding: 10px 12px;
+            }
+
             .row {
                 grid-template-columns:
                     minmax(0, 2fr)
@@ -164,38 +190,44 @@ const INFOBOX_HTML = `<!doctype html>
 
 <body>
     <div id="root">
-    <div id="test-marker">FRAME LOADED</div>
-    <img id="image" hidden />
-    <div id="rows"></div>
-</div>
+        <div id="title" hidden></div>
+        <img id="image" hidden alt="" />
+        <div id="rows"></div>
+    </div>
 
     <script>
         var root = document.getElementById("root");
+        var title = document.getElementById("title");
         var image = document.getElementById("image");
         var rows = document.getElementById("rows");
+        var hasRendered = false;
+
+        function sendAction(payload) {
+            window.parent.postMessage(
+                {
+                    action: payload
+                },
+                "*"
+            );
+        }
 
         function sendResize() {
+            if (!hasRendered) {
+                return;
+            }
+
             requestAnimationFrame(function () {
-                var rect = root.getBoundingClientRect();
-
-                var width = Math.max(
-                    Math.ceil(rect.width),
-                    1
-                );
-
                 var height = Math.max(
-                    Math.ceil(rect.height),
-                    1
+                    Math.ceil(root.getBoundingClientRect().height),
+                    32
                 );
 
-                window.parent.postMessage(
-                    {
-                        action: "@webframe.resize",
-                        aspectRatio: width / height,
-                        maxHeight: height
-                    },
-                    "*"
-                );
+                sendAction({
+                    action: "@webframe.resize",
+                    size: {
+                        height: height
+                    }
+                });
             });
         }
 
@@ -217,23 +249,31 @@ const INFOBOX_HTML = `<!doctype html>
 
             row.appendChild(labelCell);
             row.appendChild(valueCell);
-
             rows.appendChild(row);
         }
 
         function renderInfobox(state) {
             state = state || {};
 
+            var name =
+                typeof state.name === "string"
+                    ? state.name.trim()
+                    : "";
+
             var imageUrl =
                 typeof state.imageUrl === "string"
                     ? state.imageUrl.trim()
                     : "";
 
-            image.alt =
-                typeof state.name === "string" &&
-                state.name.trim()
-                    ? state.name.trim()
-                    : "Infobox image";
+            if (name) {
+                title.textContent = name;
+                title.hidden = false;
+            } else {
+                title.textContent = "";
+                title.hidden = true;
+            }
+
+            image.alt = name || "Infobox image";
 
             if (imageUrl) {
                 image.hidden = false;
@@ -274,6 +314,7 @@ const INFOBOX_HTML = `<!doctype html>
                 addRow(label, value);
             }
 
+            hasRendered = true;
             sendResize();
         }
 
@@ -281,6 +322,7 @@ const INFOBOX_HTML = `<!doctype html>
             "message",
             function (event) {
                 if (
+                    event.source !== window.parent ||
                     !event.data ||
                     !event.data.state
                 ) {
@@ -300,12 +342,9 @@ const INFOBOX_HTML = `<!doctype html>
             observer.observe(root);
         }
 
-        window.parent.postMessage(
-            {
-                action: "@webframe.ready"
-            },
-            "*"
-        );
+        sendAction({
+            action: "@webframe.ready"
+        });
     </script>
 </body>
 </html>`;
@@ -374,139 +413,74 @@ const infoboxBlock = createComponent<
             element.context.type === "document" &&
             element.context.editable;
 
-        const infoboxParams = new URLSearchParams({
-    name: element.props.name ?? "",
-    imageUrl: element.props.imageUrl ?? "",
+        const infoboxUrl =
+            context.environment.integration.urls.publicContentEndpoint +
+            "/infobox.html";
 
-    row1Label: element.props.row1Label ?? "",
-    row1Value: element.props.row1Value ?? "",
-
-    row2Label: element.props.row2Label ?? "",
-    row2Value: element.props.row2Value ?? "",
-
-    row3Label: element.props.row3Label ?? "",
-    row3Value: element.props.row3Value ?? "",
-
-    row4Label: element.props.row4Label ?? "",
-    row4Value: element.props.row4Value ?? "",
-
-    row5Label: element.props.row5Label ?? "",
-    row5Value: element.props.row5Value ?? "",
-
-    row6Label: element.props.row6Label ?? "",
-    row6Value: element.props.row6Value ?? "",
-
-    row7Label: element.props.row7Label ?? "",
-    row7Value: element.props.row7Value ?? "",
-
-    row8Label: element.props.row8Label ?? "",
-    row8Value: element.props.row8Value ?? "",
-
-    row9Label: element.props.row9Label ?? "",
-    row9Value: element.props.row9Value ?? "",
-
-    row10Label: element.props.row10Label ?? "",
-    row10Value: element.props.row10Value ?? "",
-});
-
-const infoboxUrl =
-    "https://jricady.github.io/needleskip-infobox/infobox.html?" +
-    infoboxParams.toString();
-
-return (
+        return (
             <block>
-                <card
-                    title={
-                        element.props.name ??
-                        "Infobox"
-                    }
-                >
-                    <webframe
-    aspectRatio={1.45}
-    source={{
-        url: infoboxUrl,
-    }}
-    data={{
-                            name:
-                                element.props.name ??
-                                "",
+                <webframe
+                    source={{
+                        url: infoboxUrl,
+                    }}
+                    data={{
+                        name:
+                            element.dynamicState("name"),
 
-                            imageUrl:
-                                element.props.imageUrl ??
-                                "",
+                        imageUrl:
+                            element.dynamicState("imageUrl"),
 
-                            row1Label:
-                                element.props.row1Label ??
-                                "",
-                            row1Value:
-                                element.props.row1Value ??
-                                "",
+                        row1Label:
+                            element.dynamicState("row1Label"),
+                        row1Value:
+                            element.dynamicState("row1Value"),
 
-                            row2Label:
-                                element.props.row2Label ??
-                                "",
-                            row2Value:
-                                element.props.row2Value ??
-                                "",
+                        row2Label:
+                            element.dynamicState("row2Label"),
+                        row2Value:
+                            element.dynamicState("row2Value"),
 
-                            row3Label:
-                                element.props.row3Label ??
-                                "",
-                            row3Value:
-                                element.props.row3Value ??
-                                "",
+                        row3Label:
+                            element.dynamicState("row3Label"),
+                        row3Value:
+                            element.dynamicState("row3Value"),
 
-                            row4Label:
-                                element.props.row4Label ??
-                                "",
-                            row4Value:
-                                element.props.row4Value ??
-                                "",
+                        row4Label:
+                            element.dynamicState("row4Label"),
+                        row4Value:
+                            element.dynamicState("row4Value"),
 
-                            row5Label:
-                                element.props.row5Label ??
-                                "",
-                            row5Value:
-                                element.props.row5Value ??
-                                "",
+                        row5Label:
+                            element.dynamicState("row5Label"),
+                        row5Value:
+                            element.dynamicState("row5Value"),
 
-                            row6Label:
-                                element.props.row6Label ??
-                                "",
-                            row6Value:
-                                element.props.row6Value ??
-                                "",
+                        row6Label:
+                            element.dynamicState("row6Label"),
+                        row6Value:
+                            element.dynamicState("row6Value"),
 
-                            row7Label:
-                                element.props.row7Label ??
-                                "",
-                            row7Value:
-                                element.props.row7Value ??
-                                "",
+                        row7Label:
+                            element.dynamicState("row7Label"),
+                        row7Value:
+                            element.dynamicState("row7Value"),
 
-                            row8Label:
-                                element.props.row8Label ??
-                                "",
-                            row8Value:
-                                element.props.row8Value ??
-                                "",
+                        row8Label:
+                            element.dynamicState("row8Label"),
+                        row8Value:
+                            element.dynamicState("row8Value"),
 
-                            row9Label:
-                                element.props.row9Label ??
-                                "",
-                            row9Value:
-                                element.props.row9Value ??
-                                "",
+                        row9Label:
+                            element.dynamicState("row9Label"),
+                        row9Value:
+                            element.dynamicState("row9Value"),
 
-                            row10Label:
-                                element.props.row10Label ??
-                                "",
-                            row10Value:
-                                element.props.row10Value ??
-                                "",
-                        }}
-                    />
-                </card>
+                        row10Label:
+                            element.dynamicState("row10Label"),
+                        row10Value:
+                            element.dynamicState("row10Value"),
+                    }}
+                />
 
                 {editable
                     ? [
